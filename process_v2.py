@@ -14,6 +14,12 @@ import time
 from collections import defaultdict
 from enum import Enum
 
+# Import des composants modulaires V2
+from bloc_config_v2 import BlocType, BLOC_KEYWORDS, PRIORITY_RULES, PROFILE_BLOC_MAPPING, DECISION_LOGIC
+from detection_engine_v2 import DetectionEngineV2, ProfileType, FinancingType
+from memory_store_v2 import OptimizedMemoryStoreV2
+from orchestrator_v2 import MultiAgentOrchestratorV2, AgentType, OrchestrationResult
+
 # Configuration optimisée du logging
 logging.basicConfig(
     level=logging.INFO,
@@ -42,719 +48,65 @@ else:
     logger.info("OpenAI API Key configured")
 
 # ============================================================================
-# ENUMS ET CONSTANTES V2
+# INSTANCES GLOBALES V2
 # ============================================================================
-
-class AgentType(Enum):
-    """Types d'agents spécialisés V2"""
-    GENERAL = "general"
-    AMBASSADOR = "ambassador"
-    LEARNER = "learner"
-    PROSPECT = "prospect"
-    PAYMENT = "payment"
-    CPF_BLOCKED = "cpf_blocked"
-    QUALITY = "quality"
-
-class IntentType(Enum):
-    """Types d'intentions détectées par bloc V2 - Format sans points"""
-    # Blocs Généraux
-    BLOC_GENERAL = "BLOC GENERAL"
-    BLOC_G = "BLOC G"
-    
-    # Blocs Ambassadeur
-    BLOC_B1 = "BLOC B1"
-    BLOC_B2 = "BLOC B2"
-    BLOC_D1 = "BLOC D1"
-    BLOC_D2 = "BLOC D2"
-    BLOC_E = "BLOC E"
-    
-    # Blocs Apprenant/Formation
-    BLOC_K = "BLOC K"
-    BLOC_M = "BLOC M"
-    
-    # Blocs Prospect
-    BLOC_H = "BLOC H"
-    BLOC_I1 = "BLOC I1"
-    BLOC_I2 = "BLOC I2"
-    
-    # Blocs Paiement
-    BLOC_A = "BLOC A"
-    BLOC_F = "BLOC F"
-    BLOC_J = "BLOC J"
-    BLOC_L = "BLOC L"
-    
-    # Blocs CPF/OPCO
-    BLOC_C = "BLOC C"
-    BLOC_F1 = "BLOC F1"
-    BLOC_F2 = "BLOC F2"
-    BLOC_F3 = "BLOC F3"
-    BLOC_51 = "BLOC 51"
-    BLOC_52 = "BLOC 52"
-    BLOC_53 = "BLOC 53"
-    BLOC_54 = "BLOC 54"
-    
-    # Blocs Qualité
-    BLOC_AGRO = "BLOC AGRO"
-    BLOC_LEGAL = "BLOC LEGAL"
-    BLOC_61 = "BLOC 61"
-    BLOC_62 = "BLOC 62"
-    
-    FALLBACK = "FALLBACK"
-
-class FinancingType(Enum):
-    """Types de financement"""
-    DIRECT = "direct"
-    OPCO = "opco"
-    CPF = "cpf"
-    UNKNOWN = "unknown"
-
-class ProfileType(Enum):
-    """Types de profils utilisateurs"""
-    AMBASSADOR = "ambassador"
-    LEARNER_INFLUENCER = "learner_influencer"
-    PROSPECT = "prospect"
-    UNKNOWN = "unknown"
-
-# ============================================================================
-# MAPPING BLOCS -> AGENTS V2
-# ============================================================================
-
-BLOC_TO_AGENT_MAPPING = {
-    # Agent Général
-    IntentType.BLOC_GENERAL: AgentType.GENERAL,
-    IntentType.BLOC_G: AgentType.GENERAL,
-    
-    # Agent Ambassadeur
-    IntentType.BLOC_B1: AgentType.AMBASSADOR,
-    IntentType.BLOC_B2: AgentType.AMBASSADOR,
-    IntentType.BLOC_D1: AgentType.AMBASSADOR,
-    IntentType.BLOC_D2: AgentType.AMBASSADOR,
-    IntentType.BLOC_E: AgentType.AMBASSADOR,
-    
-    # Agent Apprenant/Formation
-    IntentType.BLOC_K: AgentType.LEARNER,
-    IntentType.BLOC_M: AgentType.LEARNER,
-    
-    # Agent Prospect
-    IntentType.BLOC_H: AgentType.PROSPECT,
-    IntentType.BLOC_I1: AgentType.PROSPECT,
-    IntentType.BLOC_I2: AgentType.PROSPECT,
-    
-    # Agent Paiement
-    IntentType.BLOC_A: AgentType.PAYMENT,
-    IntentType.BLOC_F: AgentType.PAYMENT,
-    IntentType.BLOC_J: AgentType.PAYMENT,
-    IntentType.BLOC_L: AgentType.PAYMENT,
-    
-    # Agent CPF Bloqué
-    IntentType.BLOC_C: AgentType.CPF_BLOCKED,
-    IntentType.BLOC_F1: AgentType.CPF_BLOCKED,
-    IntentType.BLOC_F2: AgentType.CPF_BLOCKED,
-    IntentType.BLOC_F3: AgentType.CPF_BLOCKED,
-    IntentType.BLOC_51: AgentType.CPF_BLOCKED,
-    IntentType.BLOC_52: AgentType.CPF_BLOCKED,
-    IntentType.BLOC_53: AgentType.CPF_BLOCKED,
-    IntentType.BLOC_54: AgentType.CPF_BLOCKED,
-    
-    # Agent Qualité
-    IntentType.BLOC_AGRO: AgentType.QUALITY,
-    IntentType.BLOC_LEGAL: AgentType.QUALITY,
-    IntentType.BLOC_61: AgentType.QUALITY,
-    IntentType.BLOC_62: AgentType.QUALITY,
-}
-
-# ============================================================================
-# STORE DE MÉMOIRE V2 OPTIMISÉ
-# ============================================================================
-
-class OptimizedMemoryStoreV2:
-    """Store de mémoire optimisé V2 - Multi-Agents"""
-    
-    def __init__(self, max_size: int = 1000, ttl_seconds: int = 3600):
-        self._store = TTLCache(maxsize=max_size, ttl=ttl_seconds)
-        self._access_count = defaultdict(int)
-        self._bloc_history = defaultdict(list)
-        self._conversation_context = defaultdict(dict)
-        self._agent_history = defaultdict(list)
-        self._profile_history = defaultdict(list)
-        self._payment_context = defaultdict(dict)
-    
-    def get(self, key: str) -> List[Dict]:
-        self._access_count[key] += 1
-        return self._store.get(key, [])
-    
-    def set(self, key: str, value: List[Dict]):
-        if len(value) > 10:
-            value = value[-10:]
-        self._store[key] = value
-    
-    def add_message(self, session_id: str, message: str, role: str = "user"):
-        messages = self.get(session_id)
-        messages.append({
-            "role": role, 
-            "content": message, 
-            "timestamp": time.time()
-        })
-        self.set(session_id, messages)
-    
-    def add_bloc_presented(self, session_id: str, bloc_id: str):
-        if session_id not in self._bloc_history:
-            self._bloc_history[session_id] = []
-        self._bloc_history[session_id].append(bloc_id)
-        if len(self._bloc_history[session_id]) > 5:
-            self._bloc_history[session_id] = self._bloc_history[session_id][-5:]
-    
-    def add_agent_used(self, session_id: str, agent_type: AgentType):
-        if session_id not in self._agent_history:
-            self._agent_history[session_id] = []
-        self._agent_history[session_id].append({
-            "agent": agent_type.value,
-            "timestamp": time.time()
-        })
-        if len(self._agent_history[session_id]) > 10:
-            self._agent_history[session_id] = self._agent_history[session_id][-10:]
-    
-    def add_profile_detected(self, session_id: str, profile_type: ProfileType):
-        if session_id not in self._profile_history:
-            self._profile_history[session_id] = []
-        self._profile_history[session_id].append({
-            "profile": profile_type.value,
-            "timestamp": time.time()
-        })
-        if len(self._profile_history[session_id]) > 5:
-            self._profile_history[session_id] = self._profile_history[session_id][-5:]
-    
-    def get_last_agent(self, session_id: str) -> Optional[AgentType]:
-        history = self._agent_history.get(session_id, [])
-        if history:
-            last_agent_value = history[-1]["agent"]
-            try:
-                return AgentType(last_agent_value)
-            except ValueError:
-                return None
-        return None
-    
-    def get_last_profile(self, session_id: str) -> Optional[ProfileType]:
-        history = self._profile_history.get(session_id, [])
-        if history:
-            last_profile_value = history[-1]["profile"]
-            try:
-                return ProfileType(last_profile_value)
-            except ValueError:
-                return None
-        return None
-    
-    def has_bloc_been_presented(self, session_id: str, bloc_id: str) -> bool:
-        return bloc_id in self._bloc_history.get(session_id, [])
-    
-    def get_last_bloc(self, session_id: str) -> Optional[str]:
-        history = self._bloc_history.get(session_id, [])
-        return history[-1] if history else None
-    
-    def get_last_n_blocs(self, session_id: str, n: int = 3) -> List[str]:
-        history = self._bloc_history.get(session_id, [])
-        return history[-n:] if len(history) >= n else history
-    
-    def set_conversation_context(self, session_id: str, context_key: str, value: Any):
-        self._conversation_context[session_id][context_key] = value
-    
-    def get_conversation_context(self, session_id: str, context_key: str, default: Any = None) -> Any:
-        return self._conversation_context[session_id].get(context_key, default)
-    
-    def set_payment_context(self, session_id: str, financing_type: str, time_info: Dict, total_days: int):
-        self._payment_context[session_id] = {
-            "financing_type": financing_type,
-            "time_info": time_info,
-            "total_days": total_days,
-            "timestamp": time.time()
-        }
-    
-    def get_payment_context(self, session_id: str) -> Optional[Dict]:
-        return self._payment_context.get(session_id)
-    
-    def clear(self, session_id: str):
-        if session_id in self._store:
-            del self._store[session_id]
-        if session_id in self._bloc_history:
-            del self._bloc_history[session_id]
-        if session_id in self._conversation_context:
-            del self._conversation_context[session_id]
-        if session_id in self._agent_history:
-            del self._agent_history[session_id]
-        if session_id in self._profile_history:
-            del self._profile_history[session_id]
-        if session_id in self._payment_context:
-            del self._payment_context[session_id]
-    
-    def get_stats(self) -> Dict:
-        return {
-            "total_sessions": len(self._store),
-            "total_bloc_history": len(self._bloc_history),
-            "total_agent_history": len(self._agent_history),
-            "total_profile_history": len(self._profile_history),
-            "total_contexts": len(self._conversation_context),
-            "total_payment_contexts": len(self._payment_context),
-            "most_accessed": max(self._access_count.items(), key=lambda x: x[1]) if self._access_count else None
-        }
 
 # Instance globale du store de mémoire
 memory_store = OptimizedMemoryStoreV2()
 
-# ============================================================================
-# MOTEUR DE DÉTECTION V2
-# ============================================================================
-
-class DetectionEngineV2:
-    """Moteur de détection V2 optimisé"""
-    
-    def __init__(self):
-        self._init_keywords()
-    
-    def _init_keywords(self):
-        """Initialise les mots-clés par bloc selon la logique V2"""
-        self.bloc_keywords = {
-            IntentType.BLOC_A: frozenset([
-                "paiement", "payé", "payée", "payer", "argent", "facture", "débit", "prélèvement",
-                "virement", "chèque", "carte bancaire", "cb", "mastercard", "visa", "pas été payé"
-            ]),
-            IntentType.BLOC_B1: frozenset([
-                "affiliation", "affilié", "affiliée", "programme affiliation", "mail affiliation",
-                "email affiliation", "courriel affiliation"
-            ]),
-            IntentType.BLOC_B2: frozenset([
-                "c'est quoi un ambassadeur", "qu'est ce qu'un ambassadeur", "définition ambassadeur",
-                "ambassadeur définition", "expliquer ambassadeur"
-            ]),
-            IntentType.BLOC_C: frozenset([
-                "cpf", "compte personnel formation", "formation cpf", "financement cpf",
-                "droit formation", "mon compte formation"
-            ]),
-            IntentType.BLOC_D1: frozenset([
-                "devenir ambassadeur", "comment devenir ambassadeur", "postuler ambassadeur",
-                "candidature ambassadeur", "rejoindre ambassadeur"
-            ]),
-            IntentType.BLOC_D2: frozenset([
-                "c'est quoi un ambassadeur", "qu'est ce qu'un ambassadeur", "définition ambassadeur"
-            ]),
-            IntentType.BLOC_E: frozenset([
-                "processus ambassadeur", "étapes ambassadeur", "comment ça marche ambassadeur",
-                "procédure ambassadeur"
-            ]),
-            IntentType.BLOC_F: frozenset([
-                "paiement formation", "payé formation", "facture formation", "débit formation"
-            ]),
-            IntentType.BLOC_F1: frozenset([
-                "cpf bloqué", "dossier bloqué", "blocage cpf", "problème cpf", "délai cpf"
-            ]),
-            IntentType.BLOC_F2: frozenset([
-                "cpf dossier bloqué", "blocage dossier cpf", "problème dossier cpf"
-            ]),
-            IntentType.BLOC_F3: frozenset([
-                "opco", "opérateur compétences", "délai opco", "blocage opco", "problème opco"
-            ]),
-            IntentType.BLOC_G: frozenset([
-                "parler humain", "contacter humain", "appeler", "téléphoner", "conseiller",
-                "assistant", "aide humaine"
-            ]),
-            IntentType.BLOC_H: frozenset([
-                "prospect", "devis", "tarif", "prix", "coût", "formation", "programme",
-                "offre", "catalogue"
-            ]),
-            IntentType.BLOC_I1: frozenset([
-                "entreprise", "société", "professionnel", "auto-entrepreneur", "salarié"
-            ]),
-            IntentType.BLOC_I2: frozenset([
-                "ambassadeur vendeur", "vendeur", "commercial", "vente"
-            ]),
-            IntentType.BLOC_J: frozenset([
-                "paiement direct", "paiement immédiat", "payer maintenant"
-            ]),
-            IntentType.BLOC_K: frozenset([
-                "formations disponibles", "catalogue formation", "programmes formation",
-                "spécialités", "domaines formation", "c'est quoi vos formations", "quelles sont vos formations"
-            ]),
-            IntentType.BLOC_L: frozenset([
-                "délai dépassé", "retard paiement", "paiement en retard", "délai expiré"
-            ]),
-            IntentType.BLOC_M: frozenset([
-                "après choix", "formation choisie", "inscription", "confirmation", "intéressé par",
-                "je voudrais", "je veux", "je choisis", "m'intéresse"
-            ]),
-            IntentType.BLOC_LEGAL: frozenset([
-                "légal", "droit", "juridique", "avocat", "procédure", "recours"
-            ]),
-            IntentType.BLOC_AGRO: frozenset([
-                "agressif", "énervé", "fâché", "colère", "insulte", "grossier", "impoli",
-                "nuls", "nul", "merde", "putain", "con", "connard", "salop", "salope"
-            ]),
-            IntentType.BLOC_GENERAL: frozenset([
-                "bonjour", "salut", "hello", "qui êtes-vous", "jak company", "présentation"
-            ]),
-            IntentType.BLOC_51: frozenset([
-                "cpf dossier bloqué", "blocage administratif", "délai administratif"
-            ]),
-            IntentType.BLOC_52: frozenset([
-                "relance", "suivi", "nouvelle", "après escalade"
-            ]),
-            IntentType.BLOC_53: frozenset([
-                "seuils fiscaux", "micro-entreprise", "fiscal", "impôts"
-            ]),
-            IntentType.BLOC_54: frozenset([
-                "sans réseaux sociaux", "pas de réseaux", "pas instagram", "pas snapchat"
-            ]),
-            IntentType.BLOC_61: frozenset([
-                "escalade admin", "administrateur", "responsable", "manager"
-            ]),
-            IntentType.BLOC_62: frozenset([
-                "escalade co", "commercial", "vendeur", "conseiller"
-            ])
-        }
-    
-    @lru_cache(maxsize=50)
-    def detect_financing_type(self, message_lower: str) -> FinancingType:
-        """Détecte le type de financement"""
-        if any(word in message_lower for word in ["cpf", "compte personnel formation"]):
-            return FinancingType.CPF
-        elif any(word in message_lower for word in ["opco", "opérateur compétences"]):
-            return FinancingType.OPCO
-        elif any(word in message_lower for word in ["direct", "immédiat", "maintenant"]):
-            return FinancingType.DIRECT
-        return FinancingType.UNKNOWN
-    
-    @lru_cache(maxsize=50)
-    def extract_time_info(self, message_lower: str) -> Dict:
-        """Extrait les informations temporelles"""
-        time_patterns = {
-            "jours": r"(\d+)\s*jour",
-            "semaines": r"(\d+)\s*semaine",
-            "mois": r"(\d+)\s*mois",
-            "années": r"(\d+)\s*année"
-        }
-        
-        time_info = {}
-        for unit, pattern in time_patterns.items():
-            match = re.search(pattern, message_lower)
-            if match:
-                time_info[unit] = int(match.group(1))
-        
-        return time_info
-    
-    def convert_to_days(self, time_info: Dict) -> int:
-        """Convertit les informations temporelles en jours"""
-        total_days = 0
-        if "jours" in time_info:
-            total_days += time_info["jours"]
-        if "semaines" in time_info:
-            total_days += time_info["semaines"] * 7
-        if "mois" in time_info:
-            total_days += time_info["mois"] * 30
-        if "années" in time_info:
-            total_days += time_info["années"] * 365
-        return total_days
-    
-    def detect_profile(self, message_lower: str, session_id: str) -> ProfileType:
-        """Détecte le profil de l'utilisateur selon la logique V2"""
-        
-        # Vérifier l'historique des profils détectés
-        last_profile = memory_store.get_last_profile(session_id)
-        if last_profile:
-            return last_profile
-        
-        # Détection basée sur les mots-clés
-        ambassador_keywords = ["ambassadeur", "affiliation", "commission", "programme affiliation"]
-        learner_keywords = ["formation", "apprenant", "étudiant", "cours", "apprentissage"]
-        prospect_keywords = ["devis", "tarif", "prix", "coût", "prospect", "nouveau"]
-        
-        if any(keyword in message_lower for keyword in ambassador_keywords):
-            return ProfileType.AMBASSADOR
-        elif any(keyword in message_lower for keyword in learner_keywords):
-            return ProfileType.LEARNER_INFLUENCER
-        elif any(keyword in message_lower for keyword in prospect_keywords):
-            return ProfileType.PROSPECT
-        
-        return ProfileType.UNKNOWN
-    
-    def detect_formation_interest(self, message_lower: str, session_id: str) -> bool:
-        """Détecte si l'utilisateur exprime un intérêt pour une formation spécifique"""
-        interest_indicators = [
-            "intéressé par", "je choisis", "je veux", "m'intéresse", 
-            "ça m'intéresse", "je prends", "je sélectionne", "je souhaite",
-            "je voudrais"
-        ]
-    
-        formation_keywords = [
-            "comptabilité", "marketing", "langues", "web", "3d", "vente", 
-            "développement", "bureautique", "informatique", "écologie", "bilan",
-            "anglais", "français", "espagnol", "allemand", "italien"
-        ]
-    
-        has_interest = any(indicator in message_lower for indicator in interest_indicators)
-        has_formation = any(keyword in message_lower for keyword in formation_keywords)
-    
-        # Vérifier si l'utilisateur a récemment vu les formations
-        last_blocs = memory_store.get_last_n_blocs(session_id, 3)
-        formations_recently_shown = any("BLOC K" in bloc for bloc in last_blocs)
-    
-        return has_interest and has_formation and formations_recently_shown
-
-    def detect_aggressive_behavior(self, message_lower: str) -> bool:
-        """Détecte les comportements agressifs"""
-        aggressive_indicators = [
-            "nuls", "nul", "merde", "putain", "con", "connard", "salop", "salope",
-            "dégage", "va te faire", "ta gueule", "ferme ta gueule", "imbécile",
-            "idiot", "stupide", "incompétent", "inutile"
-        ]
-        
-        return any(indicator in message_lower for indicator in aggressive_indicators)
-
-# ============================================================================
-# ORCHESTRATEUR V2
-# ============================================================================
-
-class MultiAgentOrchestratorV2:
-    """Orchestrateur V2 optimisé selon la logique décisionnelle"""
-    
-    def __init__(self):
-        self.detection_engine = DetectionEngineV2()
-    
-    async def determine_agent(self, message: str, session_id: str) -> Dict[str, Any]:
-        """Détermine quel agent utiliser selon la logique V2"""
-        message_lower = message.lower()
-        
-        # 1. Détection du profil utilisateur
-        profile = self.detection_engine.detect_profile(message_lower, session_id)
-        memory_store.add_profile_detected(session_id, profile)
-        
-        # 2. Vérification des règles prioritaires
-        priority_bloc = self._check_priority_rules(message_lower, session_id)
-        if priority_bloc:
-            detected_bloc = priority_bloc
-            logger.info(f"Règle prioritaire détectée: {priority_bloc.value} pour session {session_id}")
-        else:
-            # 3. Détection du bloc principal selon le profil
-            detected_bloc = self._detect_bloc_by_profile(message_lower, session_id, profile)
-        
-        # 4. Mapping bloc -> agent
-        agent_type = BLOC_TO_AGENT_MAPPING.get(detected_bloc, AgentType.GENERAL)
-        
-        # 5. Création du contexte spécialisé
-        context = await self._create_agent_context(detected_bloc, agent_type, message, session_id, profile)
-        
-        # 6. Enregistrement de l'agent utilisé
-        memory_store.add_agent_used(session_id, agent_type)
-        
-        return context
-    
-    def _check_priority_rules(self, message_lower: str, session_id: str) -> Optional[IntentType]:
-        """Vérifie les règles prioritaires (Filtrage, LEGAL, AGRO)"""
-        
-        # Priorité absolue pour l'agressivité
-        if self.detection_engine.detect_aggressive_behavior(message_lower):
-            return IntentType.BLOC_AGRO
-        
-        # Priorité pour les problèmes légaux
-        if self._has_keywords(message_lower, self.detection_engine.bloc_keywords[IntentType.BLOC_LEGAL]):
-            return IntentType.BLOC_LEGAL
-        
-        # Priorité pour les problèmes de paiement CPF/OPCO
-        if self._has_keywords(message_lower, self.detection_engine.bloc_keywords[IntentType.BLOC_F1]):
-            return IntentType.BLOC_F1
-        if self._has_keywords(message_lower, self.detection_engine.bloc_keywords[IntentType.BLOC_F3]):
-            return IntentType.BLOC_F3
-        
-        return None
-    
-    def _detect_bloc_by_profile(self, message_lower: str, session_id: str, profile: ProfileType) -> IntentType:
-        """Détecte le bloc selon le profil utilisateur"""
-        
-        if profile == ProfileType.AMBASSADOR:
-            return self._detect_ambassador_bloc(message_lower, session_id)
-        elif profile == ProfileType.LEARNER_INFLUENCER:
-            return self._detect_learner_bloc(message_lower, session_id)
-        elif profile == ProfileType.PROSPECT:
-            return self._detect_prospect_bloc(message_lower, session_id)
-        else:
-            return self._detect_general_bloc(message_lower, session_id)
-    
-    def _detect_ambassador_bloc(self, message_lower: str, session_id: str) -> IntentType:
-        """Détecte le bloc pour les ambassadeurs"""
-        
-        # Suivi dossier/paiement
-        if self._has_keywords(message_lower, self.detection_engine.bloc_keywords[IntentType.BLOC_A]):
-            return IntentType.BLOC_A
-        
-        # Découverte programme affiliation
-        if self._has_keywords(message_lower, self.detection_engine.bloc_keywords[IntentType.BLOC_B1]):
-            return IntentType.BLOC_B1
-        
-        # L'affiliation c'est quoi
-        if self._has_keywords(message_lower, self.detection_engine.bloc_keywords[IntentType.BLOC_B2]):
-            return IntentType.BLOC_B2
-        
-        # Demande directe "devenir ambassadeur"
-        if self._has_keywords(message_lower, self.detection_engine.bloc_keywords[IntentType.BLOC_D1]):
-            return IntentType.BLOC_D1
-        
-        # Demande directe "c'est quoi un ambassadeur"
-        if self._has_keywords(message_lower, self.detection_engine.bloc_keywords[IntentType.BLOC_D2]):
-            return IntentType.BLOC_D2
-        
-        return IntentType.BLOC_GENERAL
-    
-    def _detect_learner_bloc(self, message_lower: str, session_id: str) -> IntentType:
-        """Détecte le bloc pour les apprenants influenceurs"""
-        
-        # Suivi paiement
-        if self._has_keywords(message_lower, self.detection_engine.bloc_keywords[IntentType.BLOC_A]):
-            return IntentType.BLOC_A
-        
-        # Promo ponctuelle
-        if self._has_keywords(message_lower, self.detection_engine.bloc_keywords[IntentType.BLOC_K]):
-            return IntentType.BLOC_K
-        
-        # Après choix de formation
-        if self.detection_engine.detect_formation_interest(message_lower, session_id):
-            return IntentType.BLOC_M
-        
-        return IntentType.BLOC_GENERAL
-    
-    def _detect_prospect_bloc(self, message_lower: str, session_id: str) -> IntentType:
-        """Détecte le bloc pour les prospects"""
-        
-        # Comprendre les offres
-        if self._has_keywords(message_lower, self.detection_engine.bloc_keywords[IntentType.BLOC_H]):
-            return IntentType.BLOC_H
-        
-        # Question CPF
-        if self._has_keywords(message_lower, self.detection_engine.bloc_keywords[IntentType.BLOC_C]):
-            return IntentType.BLOC_C
-        
-        # Parler à un humain
-        if self._has_keywords(message_lower, self.detection_engine.bloc_keywords[IntentType.BLOC_G]):
-            return IntentType.BLOC_G
-        
-        return IntentType.BLOC_GENERAL
-    
-    def _detect_general_bloc(self, message_lower: str, session_id: str) -> IntentType:
-        """Détecte le bloc général"""
-        
-        # Vérification de tous les blocs par ordre de priorité
-        priority_order = [
-            IntentType.BLOC_F1, IntentType.BLOC_F2, IntentType.BLOC_F3,  # Paiements spéciaux
-            IntentType.BLOC_C, IntentType.BLOC_D1, IntentType.BLOC_D2,  # CPF et Ambassadeurs
-            IntentType.BLOC_G, IntentType.BLOC_H, IntentType.BLOC_K,    # Contact et Formations
-            IntentType.BLOC_LEGAL, IntentType.BLOC_AGRO,                # Légal et Agressivité
-            IntentType.BLOC_61, IntentType.BLOC_62,                     # Escalades
-            IntentType.BLOC_GENERAL                                      # Général
-        ]
-        
-        for bloc_id in priority_order:
-            if bloc_id in self.detection_engine.bloc_keywords and self._has_keywords(message_lower, self.detection_engine.bloc_keywords[bloc_id]):
-                return bloc_id
-        
-        return IntentType.FALLBACK
-    
-    @lru_cache(maxsize=100)
-    def _has_keywords(self, message_lower: str, keyword_set: frozenset) -> bool:
-        """Vérifie si le message contient les mots-clés d'un bloc"""
-        return any(keyword in message_lower for keyword in keyword_set)
-    
-    async def _create_agent_context(self, bloc_id: IntentType, agent_type: AgentType, message: str, session_id: str, profile: ProfileType) -> Dict[str, Any]:
-        """Crée le contexte spécialisé pour chaque agent"""
-        
-        base_context = {
-            "status": "success",
-            "session_id": session_id,
-            "agent_type": agent_type.value,
-            "bloc_id": bloc_id.value,
-            "profile_type": profile.value,
-            "search_query": f"{bloc_id.value.lower()} {message[:50]}",
-            "context_needed": [bloc_id.value.lower()],
-            "priority_level": "MEDIUM",
-            "should_escalade": False,
-            "message": message,
-            "timestamp": time.time()
-        }
-        
-        # Contexte spécialisé par agent
-        if agent_type == AgentType.PAYMENT:
-            base_context.update(await self._create_payment_context(message, session_id))
-        elif agent_type == AgentType.AMBASSADOR:
-            base_context.update(self._create_ambassador_context(bloc_id))
-        elif agent_type == AgentType.QUALITY:
-            base_context.update(self._create_quality_context(bloc_id))
-        elif agent_type == AgentType.CPF_BLOCKED:
-            base_context.update(self._create_cpf_context(bloc_id))
-        elif agent_type == AgentType.LEARNER:
-            base_context.update(self._create_learner_context(bloc_id))
-        elif agent_type == AgentType.PROSPECT:
-            base_context.update(self._create_prospect_context(bloc_id))
-        
-        return base_context
-    
-    async def _create_payment_context(self, message: str, session_id: str) -> Dict[str, Any]:
-        """Contexte spécialisé pour l'agent paiement"""
-        financing_type = self.detection_engine.detect_financing_type(message.lower())
-        time_info = self.detection_engine.extract_time_info(message.lower())
-        total_days = self.detection_engine.convert_to_days(time_info)
-        
-        # Sauvegarder le contexte de paiement
-        memory_store.set_payment_context(session_id, financing_type.value, time_info, total_days)
-        
-        return {
-            "financing_type": financing_type.value,
-            "time_info": time_info,
-            "total_days": total_days,
-            "priority_level": "CRITICAL" if total_days > 90 else "HIGH" if total_days > 45 else "MEDIUM",
-            "should_escalade": total_days > 90,
-            "specialized_instructions": f"Gestion paiement {financing_type.value} - Délai: {total_days} jours"
-        }
-    
-    def _create_ambassador_context(self, bloc_id: IntentType) -> Dict[str, Any]:
-        """Contexte spécialisé pour l'agent ambassadeur"""
-        return {
-            "priority_level": "HIGH",
-            "context_needed": ["ambassadeur", "affiliation", "processus"],
-            "specialized_instructions": "Focus sur les 4 étapes pour devenir ambassadeur JAK Company"
-        }
-    
-    def _create_learner_context(self, bloc_id: IntentType) -> Dict[str, Any]:
-        """Contexte spécialisé pour l'agent apprenant/formation"""
-        return {
-            "priority_level": "HIGH",
-            "context_needed": ["formation", "catalogue", "inscription"],
-            "specialized_instructions": "Présentation complète du catalogue de formations JAK Company"
-        }
-    
-    def _create_prospect_context(self, bloc_id: IntentType) -> Dict[str, Any]:
-        """Contexte spécialisé pour l'agent prospect"""
-        return {
-            "priority_level": "HIGH",
-            "context_needed": ["prospect", "devis", "qualification"],
-            "specialized_instructions": "Qualification prospect et orientation commerciale appropriée"
-        }
-    
-    def _create_quality_context(self, bloc_id: IntentType) -> Dict[str, Any]:
-        """Contexte spécialisé pour l'agent qualité"""
-        is_aggressive = bloc_id == IntentType.BLOC_AGRO
-        needs_escalation = bloc_id in [IntentType.BLOC_61, IntentType.BLOC_62]
-        
-        return {
-            "priority_level": "CRITICAL" if is_aggressive else "HIGH",
-            "should_escalade": needs_escalation,
-            "specialized_instructions": "Gestion ferme mais bienveillante" if is_aggressive else "Escalade appropriée vers conseiller humain"
-        }
-    
-    def _create_cpf_context(self, bloc_id: IntentType) -> Dict[str, Any]:
-        """Contexte spécialisé pour l'agent CPF"""
-        return {
-            "priority_level": "CRITICAL",
-            "context_needed": ["cpf", "blocage", "filtrage", "opco"],
-            "specialized_instructions": "Questions de filtrage avant solution complète - Processus de déblocage étape par étape"
-        }
+# Instance globale du moteur de détection
+detection_engine = DetectionEngineV2()
 
 # Instance globale de l'orchestrateur
 orchestrator = MultiAgentOrchestratorV2()
+
+# ============================================================================
+# MAPPING BLOCS -> AGENTS (pour compatibilité)
+# ============================================================================
+
+BLOC_TO_AGENT_MAPPING = {
+    # Agent Général
+    BlocType.GENERAL: AgentType.GENERAL,
+    BlocType.G: AgentType.GENERAL,
+    
+    # Agent Ambassadeur
+    BlocType.B1: AgentType.AMBASSADOR,
+    BlocType.B2: AgentType.AMBASSADOR,
+    BlocType.D1: AgentType.AMBASSADOR,
+    BlocType.D2: AgentType.AMBASSADOR,
+    BlocType.E: AgentType.AMBASSADOR,
+    
+    # Agent Apprenant/Formation
+    BlocType.K: AgentType.LEARNER,
+    BlocType.M: AgentType.LEARNER,
+    
+    # Agent Prospect
+    BlocType.H: AgentType.PROSPECT,
+    BlocType.I1: AgentType.PROSPECT,
+    BlocType.I2: AgentType.PROSPECT,
+    
+    # Agent Paiement
+    BlocType.A: AgentType.PAYMENT,
+    BlocType.F: AgentType.PAYMENT,
+    BlocType.J: AgentType.PAYMENT,
+    BlocType.L: AgentType.PAYMENT,
+    
+    # Agent CPF Bloqué
+    BlocType.C: AgentType.CPF_BLOCKED,
+    BlocType.F1: AgentType.CPF_BLOCKED,
+    BlocType.F2: AgentType.CPF_BLOCKED,
+    BlocType.F3: AgentType.CPF_BLOCKED,
+    BlocType.BLOC_51: AgentType.CPF_BLOCKED,
+    BlocType.BLOC_52: AgentType.CPF_BLOCKED,
+    BlocType.BLOC_53: AgentType.CPF_BLOCKED,
+    BlocType.BLOC_54: AgentType.CPF_BLOCKED,
+    
+    # Agent Qualité
+    BlocType.AGRO: AgentType.QUALITY,
+    BlocType.LEGAL: AgentType.QUALITY,
+    BlocType.BLOC_61: AgentType.QUALITY,
+    BlocType.BLOC_62: AgentType.QUALITY,
+}
 
 # ============================================================================
 # ENDPOINTS API V2
@@ -762,29 +114,39 @@ orchestrator = MultiAgentOrchestratorV2()
 
 @app.get("/")
 async def root():
-    """Endpoint racine avec informations sur l'API V2"""
+    """Endpoint racine avec informations sur l'API Multi-Agents V2"""
     return {
         "message": "JAK Company Multi-Agents API V2",
         "version": "2.0-Optimized",
         "status": "active",
-        "architecture": "Multi-Agents V2 Specialized",
+        "architecture": "Multi-Agents Modular V2",
         "agents": [agent.value for agent in AgentType],
-        "profiles": [profile.value for profile in ProfileType],
         "features": [
-            "Profile-based routing",
-            "Priority rules enforcement",
-            "Enhanced context management",
-            "Improved bloc detection",
-            "Better memory management",
-            "Optimized decision logic"
+            "Agent routing by specialization",
+            "Context-aware decision making",
+            "Agent continuity tracking",
+            "Specialized prompts per domain",
+            "Enhanced memory management",
+            "Payment context filtering",
+            "Aggressive behavior detection",
+            "Modular architecture",
+            "Optimized performance",
+            "Comprehensive testing"
         ],
         "endpoints": {
             "POST /orchestrator": "Determine which agent to use",
             "GET /health": "Health check", 
             "GET /agents": "List available agents",
             "POST /clear_memory/{session_id}": "Clear session memory",
-            "GET /memory_status": "Memory store statistics"
-        }
+            "GET /memory_status": "Memory store statistics",
+            "POST /optimize_rag": "Legacy compatibility endpoint"
+        },
+        "modular_components": [
+            "bloc_config_v2.py",
+            "detection_engine_v2.py", 
+            "memory_store_v2.py",
+            "orchestrator_v2.py"
+        ]
     }
 
 @app.get("/agents")
@@ -825,6 +187,7 @@ async def orchestrate_agents(request: Request):
         message = body.get("message", "").strip()
         session_id = body.get("session_id", "default_session")
         
+        # Validation des entrées
         if not message:
             return {
                 "status": "error",
@@ -833,18 +196,42 @@ async def orchestrate_agents(request: Request):
                 "processing_time": round(time.time() - start_time, 3)
             }
         
+        if len(message) > 1000:
+            return {
+                "status": "error", 
+                "message": "Message too long (max 1000 characters)",
+                "session_id": session_id,
+                "processing_time": round(time.time() - start_time, 3)
+            }
+        
         # Ajout du message à la mémoire
         memory_store.add_message(session_id, message, "user")
         
-        # Détermination de l'agent et création du contexte
-        agent_context = await orchestrator.determine_agent(message, session_id)
+        # Orchestration avec le composant modulaire
+        orchestration_result = await orchestrator.orchestrate(message, session_id)
         
-        # Ajout du temps de traitement
-        agent_context["processing_time"] = round(time.time() - start_time, 3)
+        # Conversion du résultat en format de réponse
+        response = {
+            "status": "success",
+            "session_id": session_id,
+            "agent_type": orchestration_result.agent_type.value,
+            "bloc_id": orchestration_result.bloc_id,
+            "search_query": f"{orchestration_result.bloc_id.lower()} {message[:50]}",
+            "context_needed": [orchestration_result.bloc_id.lower()],
+            "priority_level": orchestration_result.priority_level,
+            "should_escalade": orchestration_result.should_escalate,
+            "escalation_type": orchestration_result.escalation_type,
+            "profile": orchestration_result.profile,
+            "financing_type": orchestration_result.financing_type,
+            "message": message,
+            "timestamp": time.time(),
+            "processing_time": round(time.time() - start_time, 3),
+            "context_data": orchestration_result.context_data
+        }
         
-        logger.info(f"Agent selected for session {session_id}: {agent_context['agent_type']} -> {agent_context['bloc_id']} (Profile: {agent_context['profile_type']})")
+        logger.info(f"Agent selected for session {session_id}: {orchestration_result.agent_type.value} -> {orchestration_result.bloc_id}")
         
-        return agent_context
+        return response
         
     except Exception as e:
         logger.error(f"Error in orchestrator: {e}")
@@ -858,9 +245,10 @@ async def orchestrate_agents(request: Request):
 
 @app.get("/health")
 async def health_check():
-    """Vérification de santé de l'API V2"""
+    """Vérification de santé de l'API Multi-Agents V2"""
     try:
         memory_stats = memory_store.get_stats()
+        orchestrator_stats = orchestrator.get_orchestration_stats()
         
         checks = {
             "api_status": "healthy",
@@ -876,8 +264,8 @@ async def health_check():
             "version": "2.0-Optimized",
             "checks": checks,
             "memory_stats": memory_stats,
+            "orchestrator_stats": orchestrator_stats,
             "agents_available": len(AgentType),
-            "profiles_available": len(ProfileType),
             "blocs_mapped": len(BLOC_TO_AGENT_MAPPING)
         }
     except Exception as e:
