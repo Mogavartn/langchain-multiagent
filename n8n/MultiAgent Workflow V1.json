@@ -1,0 +1,877 @@
+{
+  "name": "My workflow 3",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Salut ! 👋 Je suis l'assistant JAK Company. Comment puis-je t'aider aujourd'hui ?",
+        "options": {}
+      },
+      "id": "f37acbeb-18aa-4961-baee-7e3f621ad34c",
+      "name": "WhatsApp Chat Trigger",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "position": [
+        120,
+        260
+      ],
+      "typeVersion": 1.1,
+      "webhookId": "whatsapp-jak-trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://langchain-multiagent-weiwei.onrender.com/optimize_rag",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"message\": \"{{ $('WhatsApp Chat Trigger').item.json.chatInput }}\",\n  \"session_id\": \"{{ $('WhatsApp Chat Trigger').item.json.sessionId || 'default_session' }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        420,
+        260
+      ],
+      "id": "8f0b4ce2-d010-4162-a84a-f46949c05ccd",
+      "name": "Orchestrateur - Détection Bloc"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.agent_type }}",
+                    "rightValue": "general",
+                    "id": "15184e70-11b8-4770-bff9-1008e1cf8065"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Bloc Général"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.agent_type }}",
+                    "rightValue": "ambassador",
+                    "id": "e0c9b293-1fe7-4b48-884e-b70dfd69354c"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Ambassadeur"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.agent_type }}",
+                    "rightValue": "learner",
+                    "id": "841c8d95-687d-41cb-8f02-176d65e83526"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Apprenant Influenceur"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.agent_type }}",
+                    "rightValue": "prospect",
+                    "id": "4d8c23b9-15c5-4ace-af76-0e035249fe54"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Prospect"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.agent_type }}",
+                    "rightValue": "payment",
+                    "id": "b93a947b-9b01-47f7-bce2-fdfbae5bfd04"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Suivi Paiement"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json.agent_type }}",
+                    "rightValue": "cpf_blocked",
+                    "id": "2942d2ba-c73c-4cba-8d8c-278bdef46f60"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Cpf Bloqué"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "leftValue": "={{ $json.agent_type }}",
+                    "rightValue": "quality",
+                    "id": "e476ab05-56ac-4fd6-8bc8-b35ee22b0c7c"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Qualité et Clôture"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        720,
+        260
+      ],
+      "id": "2da3811c-e36a-4b65-87d3-50cf3bfc0173",
+      "name": "Routeur d'Agents"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('WhatsApp Chat Trigger').item.json.chatInput }}",
+        "options": {
+          "systemMessage": "=== AGENT BLOC GÉNÉRAL JAK COMPANY ===\n\nTu es l'agent d'accueil JAK Company. Tu gères :\n- Les salutations et présentations\n- Les questions générales sur JAK Company\n- L'orientation vers les autres agents si nécessaire\n\n=== CONTEXTE REÇU ===\nBLOC CIBLÉ : {{ $('Orchestrateur - Détection Bloc').first().json.bloc_id }}\nREQUÊTE OPTIMISÉE : \"{{ $('Orchestrateur - Détection Bloc').first().json.search_query }}\"\n\n=== RÈGLES ABSOLUES ===\n🔍 Utilise TOUJOURS l'outil Supabase Vector Store avec la requête optimisée\n📋 Reproduis EXACTEMENT le contenu trouvé avec TOUS les emojis\n💬 Ton chaleureux JAK Company obligatoire\n🎯 Si pas de résultat → \"Je rencontre un problème technique. Puis-je vous rediriger vers un conseiller ? 📞\""
+        }
+      },
+      "id": "8ad7e208-4075-4221-9a8a-0bc2b71ff3b2",
+      "name": "Agent Bloc Général",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        980,
+        -1080
+      ],
+      "typeVersion": 1.6
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('WhatsApp Chat Trigger').item.json.chatInput }}",
+        "options": {
+          "systemMessage": "=== AGENT AMBASSADEUR JAK COMPANY ===\n\nTu es le spécialiste des ambassadeurs JAK Company. Tu gères :\n- Les demandes pour devenir ambassadeur (BLOC D1)\n- Les définitions d'ambassadeur (BLOC D2)\n- Le processus ambassadeur (BLOC E)\n- Les questions sur l'affiliation (BLOC B1, B2)\n\n=== CONTEXTE REÇU ===\nBLOC CIBLÉ : {{ $('Orchestrateur - Détection Bloc').first().json.bloc_id }}\nREQUÊTE OPTIMISÉE : \"{{ $('Orchestrateur - Détection Bloc').first().json.search_query }}\"\n\n=== RÈGLES ABSOLUES ===\n🔍 Utilise TOUJOURS l'outil Supabase Vector Store avec la requête optimisée\n📋 Reproduis EXACTEMENT le contenu trouvé avec TOUS les emojis\n💪 Focus sur les 4 étapes complètes pour devenir ambassadeur\n🎯 Présente le processus de manière motivante et claire"
+        }
+      },
+      "id": "5bc065c7-315d-4741-b84f-5021c30285e6",
+      "name": "Agent Ambassadeur",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1100,
+        -640
+      ],
+      "typeVersion": 1.6
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('WhatsApp Chat Trigger').item.json.chatInput }}",
+        "options": {
+          "systemMessage": "=== AGENT APPRENANT INFLUENCEUR JAK COMPANY ===\n\nTu es le spécialiste des formations JAK Company. Tu gères :\n- Le catalogue des formations (BLOC K)\n- Les choix de formation (BLOC M)\n- Les questions sur les programmes\n- L'inscription aux formations\n\n=== CONTEXTE REÇU ===\nBLOC CIBLÉ : {{ $('Orchestrateur - Détection Bloc').first().json.bloc_id }}\nREQUÊTE OPTIMISÉE : \"{{ $('Orchestrateur - Détection Bloc').first().json.search_query }}\"\n\n=== RÈGLES ABSOLUES ===\n🔍 Utilise TOUJOURS l'outil Supabase Vector Store avec la requête optimisée\n📋 Reproduis EXACTEMENT le contenu trouvé avec TOUS les emojis\n📚 Présente le catalogue complet des formations\n✅ Guide vers l'inscription si formation choisie"
+        }
+      },
+      "id": "d92ee919-6b4f-449a-a874-939e9b0bcae9",
+      "name": "Agent Apprenant Influenceur",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1280,
+        -300
+      ],
+      "typeVersion": 1.6
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('WhatsApp Chat Trigger').item.json.chatInput }}",
+        "options": {
+          "systemMessage": "=== AGENT PROSPECT JAK COMPANY ===\n\nTu es le spécialiste des prospects JAK Company. Tu gères :\n- Les demandes de devis (BLOC H)\n- Les questions sur les tarifs\n- L'orientation entreprise/particulier (BLOC I1, I2)\n- La qualification des besoins\n\n=== CONTEXTE REÇU ===\nBLOC CIBLÉ : {{ $('Orchestrateur - Détection Bloc').first().json.bloc_id }}\nREQUÊTE OPTIMISÉE : \"{{ $('Orchestrateur - Détection Bloc').first().json.search_query }}\"\n\n=== RÈGLES ABSOLUES ===\n🔍 Utilise TOUJOURS l'outil Supabase Vector Store avec la requête optimisée\n📋 Reproduis EXACTEMENT le contenu trouvé avec TOUS les emojis\n💼 Qualifie le type de client (entreprise/particulier)\n📞 Oriente vers un conseiller commercial si nécessaire"
+        }
+      },
+      "id": "a2f8121a-32b4-49e0-b8c6-04cf16e1b359",
+      "name": "Agent Prospect",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1460,
+        400
+      ],
+      "typeVersion": 1.6
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('WhatsApp Chat Trigger').item.json.chatInput }}",
+        "options": {
+          "systemMessage": "=== AGENT SUIVI PAIEMENT JAK COMPANY ===\n\nTu es le spécialiste des paiements JAK Company. Tu gères :\n- Les problèmes de paiement (BLOC A)\n- Les questions sur les factures (BLOC F)\n- Les paiements directs (BLOC J)\n- Les délais dépassés (BLOC L)\n\n=== CONTEXTE REÇU ===\nBLOC CIBLÉ : {{ $('Orchestrateur - Détection Bloc').first().json.bloc_id }}\nREQUÊTE OPTIMISÉE : \"{{ $('Orchestrateur - Détection Bloc').first().json.search_query }}\"\nTYPE FINANCEMENT : {{ $('Orchestrateur - Détection Bloc').first().json.financing_type }}\nDÉLAI : {{ $('Orchestrateur - Détection Bloc').first().json.time_info }}\n\n=== RÈGLES ABSOLUES ===\n🔍 Utilise TOUJOURS l'outil Supabase Vector Store avec la requête optimisée\n📋 Reproduis EXACTEMENT le contenu trouvé avec TOUS les emojis\n💰 Applique la logique de filtrage selon le type de financement\n⏰ Gère les délais (CPF > 45j, OPCO > 60j)\n🚨 Escalade si délai critique dépassé"
+        }
+      },
+      "id": "81d181d6-699b-4595-a367-00b2720b95b5",
+      "name": "Agent Suivi Paiement",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1400,
+        40
+      ],
+      "typeVersion": 1.6
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('WhatsApp Chat Trigger').item.json.chatInput }}",
+        "options": {
+          "systemMessage": "=== AGENT CPF BLOQUÉ JAK COMPANY ===\n\nTu es le spécialiste des blocages CPF/OPCO JAK Company. Tu gères :\n- Les dossiers CPF bloqués (BLOC F1, F2)\n- Les problèmes OPCO (BLOC F3)\n- Les questions de filtrage\n- Les relances administratives\n\n=== CONTEXTE REÇU ===\nBLOC CIBLÉ : {{ $('Orchestrateur - Détection Bloc').first().json.bloc_id }}\nREQUÊTE OPTIMISÉE : \"{{ $('Orchestrateur - Détection Bloc').first().json.search_query }}\"\n\n=== RÈGLES ABSOLUES ===\n🔍 Utilise TOUJOURS l'outil Supabase Vector Store avec la requête optimisée\n📋 Reproduis EXACTEMENT le contenu trouvé avec TOUS les emojis\n❓ Pose les questions de filtrage avant de donner la solution complète\n🔧 Guide étape par étape pour débloquer les dossiers\n📞 Propose escalade si problème technique persistant"
+        }
+      },
+      "id": "2abcba78-c002-46f7-976b-3d919d553f8e",
+      "name": "Agent Cpf Bloqué",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1580,
+        800
+      ],
+      "typeVersion": 1.6
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('WhatsApp Chat Trigger').item.json.chatInput }}",
+        "options": {
+          "systemMessage": "=== AGENT QUALITÉ ET CLÔTURE JAK COMPANY ===\n\nTu es le contrôleur qualité JAK Company. Tu gères :\n- La vérification des réponses\n- Les escalades (BLOC 61, 62)\n- Les comportements agressifs (BLOC AGRO)\n- Les cas légaux/juridiques (BLOC LEGAL)\n- La proposition de solutions alternatives\n\n=== CONTEXTE REÇU ===\nBLOC CIBLÉ : {{ $('Orchestrateur - Détection Bloc').first().json.bloc_id }}\nREQUÊTE OPTIMISÉE : \"{{ $('Orchestrateur - Détection Bloc').first().json.search_query }}\"\nESCALADE REQUISE : {{ $('Orchestrateur - Détection Bloc').first().json.should_escalade }}\n\n=== RÈGLES ABSOLUES ===\n🔍 Utilise TOUJOURS l'outil Supabase Vector Store avec la requête optimisée\n📋 Reproduis EXACTEMENT le contenu trouvé avec TOUS les emojis\n🚨 Gère les situations d'agressivité avec fermeté et bienveillance\n📞 Propose l'escalade vers conseiller humain quand nécessaire\n⚖️ Oriente vers le service juridique si cas légal"
+        }
+      },
+      "id": "bade253c-141d-4f29-af7d-452812e7139e",
+      "name": "Agent Qualité et Clôture",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1680,
+        1220
+      ],
+      "typeVersion": 1.6
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "91ebed45-1dd2-4186-8f3c-1bc8fae433f2",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        980,
+        -820
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "openAiApi": {
+          "id": "AGfUUiBI5vVkaYxI",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Orchestrateur - Détection Bloc').first().json.session_id || 'default_session' }}"
+      },
+      "id": "15420191-424a-46c6-b173-0fa38e37ee0c",
+      "name": "Postgres Chat Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "position": [
+        2180,
+        480
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "postgres": {
+          "id": "T2qbeS5wdx0NKd6L",
+          "name": "Postgres SUPABASE"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "batchSize": 100,
+          "stripNewLines": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        2500,
+        180
+      ],
+      "id": "fbc4fc71-ac87-4d79-acd4-e8d3569d08b4",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "AGfUUiBI5vVkaYxI",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## 🎯 WORKFLOW MULTI-AGENTS JAK COMPANY V2\n\n### Architecture :\n1. **Orchestrateur** : Détecte le type d'agent nécessaire\n2. **Routeur** : Dirige vers l'agent spécialisé\n3. **6 Agents spécialisés** selon votre schéma\n4. **Outils partagés** : Mémoire, Embeddings, Vector Store\n\n### Avantages :\n- **Spécialisation** : Chaque agent maîtrise son domaine\n- **Maintenance** : Plus facile à déboguer et améliorer\n- **Performance** : Prompts optimisés par domaine\n- **Évolutivité** : Ajout d'agents facile\n\n### Code Python :\n- **Option 1** : Même API avec routage interne\n- **Option 2** : APIs séparées par agent\n- **Recommandé** : API unifiée avec classes spécialisées",
+        "height": 700,
+        "width": 800
+      },
+      "id": "91997fd3-1e91-42d3-bf6b-1548274b113a",
+      "name": "🎯 ARCHITECTURE MULTI-AGENTS",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -260,
+        -380
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "🔍 OUTIL DE RECHERCHE BLOC JAK COMPANY - AGENTS SPÉCIALISÉS\n\nRecherche les blocs de réponses JAK Company dans Supabase.\n\n📋 UTILISATION :\n- Filtre par la colonne bloc_id directe\n- Utilise la requête optimisée de l'Orchestrateur\n- Retourne le contenu exact des blocs\n\n⚠️ CRITIQUE : Reproduis EXACTEMENT le contenu trouvé avec TOUS les emojis !",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "topK": 5,
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        2520,
+        -60
+      ],
+      "id": "f13f7005-d075-4ccd-88ee-560487205385",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "5j5hfRIonFV8xgya",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1120,
+        -440
+      ],
+      "id": "5af0ac9e-430a-4db0-a100-20b22408cf2f",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "AGfUUiBI5vVkaYxI",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1300,
+        -120
+      ],
+      "id": "b131bd7a-b860-4a33-ab60-030c449cb265",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "AGfUUiBI5vVkaYxI",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1400,
+        240
+      ],
+      "id": "6752350c-a070-46d7-90a3-4600e8fb4648",
+      "name": "OpenAI Chat Model3",
+      "credentials": {
+        "openAiApi": {
+          "id": "AGfUUiBI5vVkaYxI",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1480,
+        620
+      ],
+      "id": "6637b289-2df0-4215-9b32-6a208071c32b",
+      "name": "OpenAI Chat Model4",
+      "credentials": {
+        "openAiApi": {
+          "id": "AGfUUiBI5vVkaYxI",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1600,
+        1020
+      ],
+      "id": "c10ce167-b02c-4795-8c5c-b527b9c070de",
+      "name": "OpenAI Chat Model5",
+      "credentials": {
+        "openAiApi": {
+          "id": "AGfUUiBI5vVkaYxI",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1700,
+        1440
+      ],
+      "id": "e6357afd-92a2-463c-bff9-9ae0aca093d3",
+      "name": "OpenAI Chat Model6",
+      "credentials": {
+        "openAiApi": {
+          "id": "AGfUUiBI5vVkaYxI",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WhatsApp Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "Orchestrateur - Détection Bloc",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Orchestrateur - Détection Bloc": {
+      "main": [
+        [
+          {
+            "node": "Routeur d'Agents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Routeur d'Agents": {
+      "main": [
+        [
+          {
+            "node": "Agent Bloc Général",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agent Ambassadeur",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agent Apprenant Influenceur",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agent Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agent Suivi Paiement",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agent Cpf Bloqué",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agent Qualité et Clôture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent Bloc Général",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agent Bloc Général",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "Agent Ambassadeur",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "Agent Apprenant Influenceur",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "Agent Prospect",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "Agent Suivi Paiement",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "Agent Cpf Bloqué",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "Agent Qualité et Clôture",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent Bloc Général",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Agent Ambassadeur",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Agent Apprenant Influenceur",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Agent Prospect",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Agent Suivi Paiement",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Agent Cpf Bloqué",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Agent Qualité et Clôture",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent Ambassadeur",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent Apprenant Influenceur",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent Suivi Paiement",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent Prospect",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent Cpf Bloqué",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model6": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent Qualité et Clôture",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "af3bba82-f31c-441d-89bf-f5a6b55a6cf5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6b2cf4f3d9b28e507a8c36ffb37c88179209c4713fb3f2f565c565589ee75b1e"
+  },
+  "id": "E1R9WbffzkXxWgBX",
+  "tags": [
+    {
+      "createdAt": "2025-07-15T09:47:55.601Z",
+      "updatedAt": "2025-07-15T09:47:55.601Z",
+      "id": "6F8LClVZgyWsyPsK",
+      "name": "JAK Company"
+    },
+    {
+      "name": "Multi-Agents",
+      "id": "fjynhT5eOtE65uZN",
+      "createdAt": "2025-07-31T12:12:44.468Z",
+      "updatedAt": "2025-07-31T12:12:44.468Z"
+    },
+    {
+      "createdAt": "2025-06-11T10:43:11.223Z",
+      "updatedAt": "2025-06-11T10:43:11.223Z",
+      "id": "CWpb2RP1OjTkXMOH",
+      "name": "WhatsApp"
+    }
+  ]
+}
