@@ -123,7 +123,6 @@ class DetectionEngineV2:
         aggressive_keywords = BLOC_KEYWORDS[BlocType.AGRO]["keywords"]
         return any(keyword in message_lower for keyword in aggressive_keywords)
     
-    @lru_cache(maxsize=100)
     def detect_formation_interest(self, message: str, recent_blocs: List[str]) -> bool:
         """Détecte si l'utilisateur exprime un intérêt pour une formation spécifique"""
         message_lower = message.lower()
